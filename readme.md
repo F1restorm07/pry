@@ -35,6 +35,9 @@ only focusing on indexing documents, querying the indexes, and returning results
 - find out the behind-the-scenes when typing a search
 - when typing a letter, bubbles pop out with other letters
 - *online planner*
+        - progressive web app
+        - use web framework to build website
+                - svelte
         - use search engine in calendar
         - tuned for schoolwork/education
         - for teachers
