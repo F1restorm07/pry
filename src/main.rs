@@ -7,14 +7,14 @@ use std::fs::File;
 use  fst::{ Streamer, IntoStreamer };
 
 fn main() {
-    index::index(&mut std::fs::File::open("Cargo.toml").unwrap());
+    index::index(&mut std::fs::File::open("gutenburg/12374.txt").unwrap());
     // query::search("'rkyv");
-    let op = operation::Operation::build(operation::tokenize("s | r"));
+    let op = operation::Operation::build(operation::tokenize("cyr | ^f | !chr 'ky"));
     println!("{op:?}");
     // println!("{:?}", operation::Operation::automate(op));
-    let automatons = operation::Operation::automate(op);
+    let automatons = op.automate();
     let mem_map = unsafe {
-        memmap::Mmap::map(&File::open(format!("{}/.cache/map.fst", env!("HOME"))).unwrap()).unwrap()
+        memmap::Mmap::map(&File::open("map.fst").unwrap()).unwrap()
     };
     let set = fst::Set::new(mem_map).unwrap();
     let mut ops = fst::set::OpBuilder::new();

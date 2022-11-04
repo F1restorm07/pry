@@ -2,6 +2,13 @@ use logos::{ Logos, Span, Lexer, Filter };
 use fst::{ self, Streamer, IntoStreamer };
 use std::fs::File;
 use crate::operation::{ Operation, tokenize };
+use crate::document::Index;
+
+pub struct Query<'q> {
+    operation: Operation,
+    index: Index<'q>,
+    // filters: Filters,
+}
 
 pub fn search(query: &str) {
     let mem_map = unsafe { 

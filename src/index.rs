@@ -24,6 +24,6 @@ pub fn index(file: &mut File) /* -> Result<Set<memmap::Mmap>, fst::Error> */ {
     let mut build = fst::SetBuilder::new(writer).unwrap();
     build.extend_iter(sort_contents).unwrap();
     build.finish().expect("could not write index to file");
-
+    // println!("{}", include_bytes!("map.fst"));
 
 }
