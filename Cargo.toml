@@ -4,25 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# smol = "1.2"
-# tracing = "0.1"
-# tracing_subscriber = "0.3"
-# futures = "0.3"
-# rayon = "1.5"
-# parking_lot = "0.12"
-once_cell = "1.18"
-hashbrown = "0.14"
-twox-hash = "1.6"
-# anyhow = "1.0"
+# hashbrown = "0.14"
+# twox-hash = "1.6"
 
-fst = "0.4"
-combine = "4.6"
+# fst = "0.4" # words -> doc_id map
+combine = "4.6" # search query parsing (maybe other parsing, too)
+unicode-segmentation = "1.10" # unicode sentences/words
+sled = "0.34" # database of files
+stop-words = "0.7" # tokenizing files
+whichlang = "0.1" # language detection
+# memmap2 = "0.7" # opening file into memory
+# whatlang = "0.16" # language detection
 # regex-automata = { version = "0.3" }
-memmap2 = "0.7"
-logos = "0.13"
-roaring = "0.10"
-# serde = { version = "1", features = ["derive"]}
-# serde_json = "1"
+roaring = "0.10" # document id storage
 
 [profile.bench]
 opt = 3
