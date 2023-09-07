@@ -24,24 +24,24 @@ only focusing on indexing documents, querying the indexes, and returning results
                 - [] filters
 - [X] unicode-aware
 - indexing data
-        - [X] index into fst
-        - [ ] roaring bitmaps
 - encoding data
-        - [X] fst
 - [ ] codebase
 	- [ ] as small as possible
 	- [ ] files accomplish a single task, which can then be used in other files
         - [ ] give ability create extensions to suit needs
         - [ ] should only do the abdolute core functionality of searching
                          - [ ] querying
-                            - [x] parse search query
-                            - [ ] pass search to database
-                                - [ ] build query infrastructure around database
+                            - [X] parse search query
+                            - [X] pass search to database
+                                - [X] build primative query infrastructure around database
+                            - [ ] query file metadata
                          - [X] indexing
                             - [X] detect language of file
                             - [X] split file and remove stopwords
-                         - [ ] updating and creating database
+                         - [ ] database operations
                             - [X] inserting files
+                            - [ ] updating files
+                            - [ ] removing files
 
 ### Indexing file
 
@@ -50,6 +50,8 @@ split into lines, then words
 remove stopwords
 
 split text files into sentences (split by periods), then group into paragraphs (segment breaks, i.e newlines), then into files
+
+how to do this very fast
 
 ### Storage Layout
 
@@ -65,7 +67,16 @@ word -> documents or documents -> word
 use fst map for words to documents (roaring bitmap of document ids) (<- search through this maybe)
 find returned ids in the sled db and return the file names/documents
 
+### Tagging files ??
+
+put words/files (??) into trees in sled_db
+multiple tags -> put word/file into multiple trees ??
+
 ## Querying
 
 - take in search (parse though combine)
-- specify the directory / db (if more than one are running)
+- optionally specify the directory / db (if more than one are running)
+
+## Metadata
+
+associated with each tree ??

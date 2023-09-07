@@ -31,30 +31,44 @@ pub struct FileText<'file>(Vec<FileSegment<'file>>);
 // collect sentences into segments (paragraphs)
 // provide the segments into text
 
-// only supports english for right now
-pub fn collect_important_words<P: AsRef<Path>>(file: P) -> Vec<String> {
+pub fn index_file<P: AsRef<Path>>(file: P) -> Vec<String> {
     let file_contents = read_to_string(file).unwrap();
-    let file_language = whichlang::detect_language(file_contents.as_str());
-    let mut important_words: Vec<String> = vec![];
-    let file_contents_filtered = file_contents.to_ascii_lowercase().replace(|c: char| !(c.is_alphanumeric() || c == '\''), " ");
-    let file_lines = file_contents_filtered.lines().filter(|l| !l.is_empty()).map(|l| l.to_string()).collect::<Vec<_>>();
+    let file_contents_filtered = file_contents.to_ascii_lowercase().replace(|c: char| !(c.is_alphanumeric() || c == '\'' || c == '\n'), " ");
+    let file_segments = file_segments(&file_contents_filtered);
+    let mut imp_words = Vec::new();
+
+    for segment in file_segments {
+        imp_words.extend(collect_important_words(&segment));
+    }
+
+    imp_words
+
+}
+
+pub fn file_segments(text: &str) -> Vec<String> {
+    text
+        .split("\n\n")
+        .filter(|l| !l.is_empty())
+        .map(|l| l.to_string())
+        .collect::<Vec<_>>()
+}
+
+// only supports english for right now
+pub fn collect_important_words(text: &str) -> Vec<String> {
+    let file_language = whichlang::detect_language(text);
+    let mut words: Vec<String> = vec![];
     
     let lang_stop_words = match file_language {
         whichlang::Lang::Eng => stop_words::get(stop_words::LANGUAGE::English),
         _ => vec![]
     };
     
-    // println!("stop_words: {lang_stop_words:?}\n---");
+    text
+        .unicode_words()
+        .filter(|w| lang_stop_words.binary_search(&w.to_string()).is_err())
+        .for_each(|w| words.push(w.to_string()));
 
-    for line in file_lines {
-        let line_important_words = line
-            .split_whitespace()
-            .filter(|w| lang_stop_words.binary_search(&w.to_string()).is_err())
-            .map(|w| w.to_string());
-        important_words.extend(line_important_words);
-    }
-
-    important_words.sort();
-    important_words.dedup();
-    important_words
+    words.sort();
+    words.dedup();
+    words
 }

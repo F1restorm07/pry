@@ -4,27 +4,24 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# hashbrown = "0.14"
-# twox-hash = "1.6"
+# hashbrown = "0.14" # drop-in hashmap replacement
+# twox-hash = "1.6" # impl of Xxhash algorithm
 
-# fst = "0.4" # words -> doc_id map
-combine = "4.6" # search query parsing (maybe other parsing, too)
-unicode-segmentation = "1.10" # unicode sentences/words
-sled = "0.34" # database of files
-stop-words = "0.7" # tokenizing files
-whichlang = "0.1" # language detection
+combine = "4.6.6" # search query parsing (maybe other parsing, too)
+unicode-segmentation = "1.10.1" # unicode sentences/words
+sled = "0.34.7" # database of files
+stop-words = "0.7.2" # tokenizing files
+whichlang = "0.1.0" # language detection
+# flood-tide = "0.2.10" # cmdline parser
 # memmap2 = "0.7" # opening file into memory
-# whatlang = "0.16" # language detection
-# regex-automata = { version = "0.3" }
-roaring = "0.10" # document id storage
+# roaring = "0.10" # document id storage
 
 [profile.bench]
-opt = 3
+opt-level = 3
 debug = false
 debug-assertions = false
 
 [profile.release]
-opt = 3
 lto = true
 debug = false
 debug-assertions = false

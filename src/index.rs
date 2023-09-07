@@ -1,12 +1,12 @@
-use std::{collections::HashMap, hash::{Hash, SipHasher, Hasher}};
+use std::{collections::HashMap, hash::{Hash, SipHasher, Hasher}, path::Path};
 
 use sled::IVec;
 
-use crate::query::Query;
+use crate::{query::Query, file_reader::index_file};
 
 
 pub struct Index {
-    pub words_to_file: sled::Db,
+    words_to_file: sled::Db,
     file_ids: HashMap<String, u32>,
 }
 
@@ -16,7 +16,13 @@ impl Index {
         Self { words_to_file: sled::open(path).unwrap(), file_ids: HashMap::new() }
     }
     // insert only important_words, will prob also need refernce to full document
-    pub fn insert_file(&mut self, path: &str, words: Vec<String>) {
+    // relative path is relative to the directory the program is running in, include the extension
+    pub fn insert_file(&mut self, relative_path: &str/* , words: Vec<String> */) {
+        println!("inserting file: {relative_path}");
+        let words = index_file(format!("./{relative_path}").as_str());
+        // in the future, disallow any paths not in the current directory or its children
+        // should error out potentially
+        let path = relative_path.trim_start_matches("../").split_terminator('.').collect::<Vec<_>>()[0];
         let mut hasher = SipHasher::default();
         path.hash(&mut hasher);
 
@@ -26,7 +32,6 @@ impl Index {
         } else {
              self.file_ids.insert(path.to_string(), hasher.finish() as u32)
         };
-        println!("file_ids: {:?}", self.file_ids);
 
         let byte_words = words.iter().map(|w| w.as_bytes()).collect::<Vec<_>>();
         let byte_words = byte_words.as_slice();
@@ -46,17 +51,32 @@ impl Index {
                 } else {
                     // push the new file_id into the value
                     new_value.extend_from_slice(file_id.as_bytes());
-                    // println!("new: {new_value:?}");
-                    self.words_to_file.insert(word, IVec::from_iter(new_value));
+                    let _ = self.words_to_file.insert(word, IVec::from_iter(new_value));
                 }
             } else {
-                self.words_to_file.insert(word, file_id.as_bytes());
-                // println!("new_word: {} -> {:?}",String::from_utf8(word.to_vec()).unwrap(), self.words_to_file.get(word));
+                let _ = self.words_to_file.insert(word, file_id.as_bytes());
             }
         }
     }
-    pub fn get(&self, key: &str) -> Result<Option<IVec>, sled::Error> {
-        self.words_to_file.get(key.as_bytes())
+    pub fn insert_directory(&mut self, relative_path: &str) {
+        let directory = Path::new(relative_path);
+
+        if !directory.is_dir() { panic!("insert_directory directory path is not a directory") }
+
+        for file in directory.read_dir().unwrap() {
+            let file_to_insert = file.unwrap().path();
+            println!("inserting_file: {file_to_insert:?} from directory: {directory:?}");
+            self.insert_file(file_to_insert.to_str().unwrap());
+        }
+            
+    }
+    pub fn get_file(&self, key: &str) -> Vec<&String> {
+        let file_bytes = self.words_to_file.get(key.as_bytes()).unwrap().unwrap();
+        let file_ids = file_bytes.chunks(10).map(|id| String::from_utf8(id.to_vec()).unwrap().parse::<u32>().unwrap()).collect::<Vec<_>>();
+
+        // find file from file_id (is there a better way to do this)
+        self.file_ids.values().zip(self.file_ids.keys()).filter(|(val, _)| file_ids.contains(val)).map(|(_, key)| key).collect::<Vec<_>>()
+
     }
     // search the database, return the matching words, will also prob need to return associated files
     pub fn search(&self, query: Vec<Query>) -> Vec<String> {
@@ -77,14 +97,17 @@ impl Index {
                 }
                 Query::Subsequence(subseq) => {
                     db_iter.retain(|key| {
-                        for char in subseq.as_bytes() {
-                            if !key.contains(char) {
-                                return false;
-                            } else {
-                                continue;
+                        let mut key_pos = 0;
+                        let mut subseq_pos = 0;
+                        let subseq = subseq.as_bytes();
+                        while key_pos < key.len() && subseq_pos < subseq.len() {
+                            if key[key_pos] == subseq[subseq_pos] {
+                                subseq_pos+=1;
                             }
+                            key_pos+=1;
                         }
-                        return true;
+
+                        subseq_pos == subseq.len()
                     });
                 }
                 Query::Complement(item) => {
@@ -101,14 +124,17 @@ impl Index {
                         }
                         Query::Subsequence(subseq) => {
                             db_iter.retain(|key| {
-                                for char in subseq.as_bytes() {
-                                    if !key.contains(char) {
-                                        return true;
-                                    } else {
-                                        continue;
+                                let mut key_pos = 0;
+                                let mut subseq_pos = 0;
+                                let subseq = subseq.as_bytes();
+                                while key_pos < key.len() && subseq_pos < subseq.len() {
+                                    if key[key_pos] == subseq[subseq_pos] {
+                                        subseq_pos+=1;
                                     }
+                                    key_pos+=1;
                                 }
-                                return false;
+
+                                subseq_pos == subseq.len()
                             });
                         }
                         _ => {}
@@ -131,14 +157,40 @@ impl Index {
                             }
                             Query::Subsequence(subseq) => {
                                 union_matched.extend(db_iter.clone().into_iter().filter(|key| {
-                                    for char in subseq.as_bytes() {
-                                        if !key.contains(char) {
-                                            return false;
-                                        } else {
-                                            continue;
+                                    // let mut key_pos = Some(0);
+                                    // let bytes_subseq = subseq.as_bytes();
+                                    // for (idx, ch) in bytes_subseq.iter().enumerate() {
+                                    //     if key_pos.is_none() { return false; }
+                                    //
+                                    //     // TODO: BIG FIX with multiple of same letter and letter
+                                    //     // ordering
+                                    //     if key[key_pos.unwrap()+1..].contains(ch) {
+                                    //         key_pos = key[key_pos.unwrap()+1..]
+                                    //             .iter()
+                                    //             .position(|&c| 
+                                    //                       c == bytes_subseq[(idx+1).min(bytes_subseq.len() - 1)]// get next character
+                                    //                 );
+                                    //         println!("subseq search success <{} char: {}> -> next_pos: {:?}", 
+                                    //                  String::from_utf8(key.to_vec()).unwrap(), 
+                                    //                  (*ch) as char,
+                                    //                  key_pos);
+                                    //     } else {
+                                    //         return false;
+                                    //     }
+                                    // }
+                                    // return true;
+
+                                    let mut key_pos = 0;
+                                    let mut subseq_pos = 0;
+                                    let subseq = subseq.as_bytes();
+                                    while key_pos < key.len() && subseq_pos < subseq.len() {
+                                        if key[key_pos] == subseq[subseq_pos] {
+                                            subseq_pos+=1;
                                         }
+                                        key_pos+=1;
                                     }
-                                    return true;
+
+                                    subseq_pos == subseq.len()
                                 })
                                     .collect::<Vec<_>>());
                             }
@@ -157,14 +209,17 @@ impl Index {
                                     }
                                     Query::Subsequence(subseq) => {
                                         union_matched.extend(db_iter.clone().into_iter().filter(|key| {
-                                            for char in subseq.as_bytes() {
-                                                if !key.contains(char) {
-                                                    return true;
-                                                } else {
-                                                    continue;
+                                            let mut key_pos = 0;
+                                            let mut subseq_pos = 0;
+                                            let subseq = subseq.as_bytes();
+                                            while key_pos < key.len() && subseq_pos < subseq.len() {
+                                                if key[key_pos] == subseq[subseq_pos] {
+                                                    subseq_pos+=1;
                                                 }
+                                                key_pos+=1;
                                             }
-                                            return false;
+
+                                            subseq_pos == subseq.len()
                                         })
                                             .collect::<Vec<_>>());
                                     }

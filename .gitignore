@@ -1,5 +1,5 @@
 Cargo.lock
 gutenburg/
 collection/
+collections/
 *.fst
-query.rs

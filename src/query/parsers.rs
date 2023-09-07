@@ -15,9 +15,8 @@ where
         attempt(parse_exact().and(not_followed_by(optional(spaces()).with(token('|')))).map(|x| x.0)),
         attempt(parse_prefix().and(not_followed_by(optional(spaces()).with(token('|')))).map(|x| x.0)),
         attempt(parse_suffix().and(not_followed_by(optional(spaces()).with(token('|')))).map(|x| x.0)),
-        attempt(parse_union()),
-        // parse_union(),
-        many1(alpha_num()).map(Query::Subsequence)
+        attempt(many1(alpha_num()).and(not_followed_by(optional(spaces()).with(token('|')))).map(|x| Query::Subsequence(x.0)).message("subsequence parser failed")),
+        parse_union(),
                         ));
 
     many(query_parsers
