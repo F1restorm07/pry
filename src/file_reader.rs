@@ -10,27 +10,6 @@ pub struct FileSegment<'seg>(Vec<&'seg str>);
 #[derive(Debug)]
 pub struct FileText<'file>(Vec<FileSegment<'file>>);
 
-// collect segments into a file
-// provide the text of the file
-// pub fn index_file(file_text: &str) -> FileText {
-//
-//     FileText(
-//         file_text
-//         .split("\r\n\r\n")
-//         .filter(|l| !l.is_empty())
-//         .map(|line| {
-//             let t = line.split_inclusive("\r\n").map(|s| s.get(s.len()-1..=s.len()).map(|c| " ").unwrap()).collect::<Vec<_>>();
-//             let text = line.split("\r\n").collect::<Vec<_>>().join(" ").as_str();
-//             // let text = text.clone().as_str();
-//             file_segment(text)
-//         })
-//         .collect::<Vec<FileSegment>>()
-//     )
-// }
-
-// collect sentences into segments (paragraphs)
-// provide the segments into text
-
 pub fn index_file<P: AsRef<Path>>(file: P) -> Vec<String> {
     let file_contents = read_to_string(file).unwrap();
     let file_contents_filtered = file_contents.to_ascii_lowercase().replace(|c: char| !(c.is_alphanumeric() || c == '\'' || c == '\n'), " ");

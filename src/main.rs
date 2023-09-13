@@ -1,19 +1,25 @@
-use pry::{query, index::Index};
-use combine::EasyParser;
+use std::sync::OnceLock;
+
+use pry::{index::Index, cli::{create_cli_conf, CmdOptionsConfig}, event::{Event, EventDispatcher, user::{UserEventer, UserOpEvent}}, operation::UserOperation};
+
+static DB: OnceLock<Index> = OnceLock::new();
 
 fn main() {
-    let test_query = query::parsers::parse_query().easy_parse("apple | ban").unwrap();
-    println!("{test_query:?}");
+    DB.get_or_init(|| Index::new("collections"));
+    run(&create_cli_conf().unwrap());
+}
 
-    let mut db = Index::new("collections");
-    db.insert_file("gutenburg/12374.txt");
-    db.insert_file("readme.md");
-    db.insert_directory("../../../learning");
-    let matched = db.search(test_query.0);
-    println!("{matched:?}");
+fn run(conf: &CmdOptionsConfig) {
+    let dispatcher = EventDispatcher::new();
+    dispatcher.add_route("index", DB.get().unwrap());
+    dispatcher.add_route("user", &UserEventer {});
 
-    for word in matched {
-        let file = db.get_file(word.as_str());
-        println!("{word}: {file:?}");
+    if conf.subcmd_conf.subcmd_insert {
+        println!("input file: {}", conf.subcmd_conf.flag_file);
+        UserOpEvent::new(UserOperation::insert(conf.subcmd_conf.flag_file.as_str())).dispatch("index");
+    } else if conf.subcmd_conf.subcmd_query {
+        println!("input query: {}", conf.subcmd_conf.flag_query);
+       UserOpEvent::new(UserOperation::query(conf.subcmd_conf.flag_query.as_str())).dispatch("index"); 
     }
 }
+

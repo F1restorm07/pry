@@ -9,12 +9,24 @@ edition = "2021"
 
 combine = "4.6.6" # search query parsing (maybe other parsing, too)
 unicode-segmentation = "1.10.1" # unicode sentences/words
-sled = "0.34.7" # database of files
+sled = "0.34.7" # engine index
+uuid = { version = "1.4.1", features = ["v4", "fast-rng"] }  # file id generation
 stop-words = "0.7.2" # tokenizing files
 whichlang = "0.1.0" # language detection
-# flood-tide = "0.2.10" # cmdline parser
-# memmap2 = "0.7" # opening file into memory
-# roaring = "0.10" # document id storage
+flood-tide = { version = "0.2.10", features = ["simple_gnu_style_subc"] } # cmdline parser
+downcast-rs = "1.2.0" # downcasting from trati object to specific struct/enum
+# owo-colors = "3.5.0" # cli coloring
+# directories = "5.0.1" # find data directory for default db path
+# inventory = "0.3.12" # plugin registration
+# corosensei = "0.1.4" # stack coroutines (parallelization)
+# slog = "2.7.0" # structured logging
+# snafu = "0.7.5" # organizing error types
+# slipstream = "0.2.1" # simd library
+# event-listener = "3.0.0" # communication between operations and database (only notifies listeners, does not send data) -> possible use case for watching file changes
+# futures-lite = "1.13.0" # future async executor, lite
+
+[dev-dependencies]
+brunch = "0.5.0" # profiler
 
 [profile.bench]
 opt-level = 3
@@ -26,3 +38,11 @@ lto = true
 debug = false
 debug-assertions = false
 strip = true
+
+[[bench]]
+name = "file_reader"
+harness = false
+
+[[bench]]
+name = "dispatcher"
+harness = false
